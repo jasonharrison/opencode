@@ -82,6 +82,9 @@ function themeCurrent(): HostPluginApi["theme"]["current"] {
     syntaxPunctuation: c,
     thinkingText: b,
     thinkingGutter: false,
+    thinkingGutterChar: "┃",
+    thinkingGutterColor: RGBA.fromValues(e.r, e.g, e.b, 0.6),
+    thinkingGutterColorDone: RGBA.fromValues(e.r, e.g, e.b, 0.6),
     thinkingOpacity: 0.6,
   }
 }

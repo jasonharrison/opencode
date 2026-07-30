@@ -25,7 +25,6 @@ import { SplitBorder } from "../../ui/border"
 import { useTuiPaths, useTuiTerminalEnvironment } from "../../context/runtime"
 import { Spinner } from "../../component/spinner"
 import { createSyntaxStyleMemo, generateSubtleSyntax, selectedForeground, useTheme } from "../../context/theme"
-import type { Theme } from "../../theme"
 import { BoxRenderable, ScrollBoxRenderable, addDefaultParsers, TextAttributes, RGBA } from "@opentui/core"
 import { Prompt, type PromptRef } from "../../component/prompt"
 import type {
@@ -1573,12 +1572,6 @@ const PART_MAPPING = {
 
 const INLINE_TOOL_ICON_WIDTH = 2
 
-// Left-gutter color for reasoning blocks when a theme opts into thinkingGutter:
-// the warning hue dimmed by thinkingOpacity (matches the "Thought" header).
-function reasoningGutterColor(theme: Theme) {
-  return RGBA.fromValues(theme.warning.r, theme.warning.g, theme.warning.b, theme.thinkingOpacity)
-}
-
 // True for the first text part of a message when a reasoning part precedes it,
 // so a faint rule can mark the thinking -> final-answer boundary.
 function isAnswerBoundary(parts: Part[], index: number) {
@@ -1625,8 +1618,8 @@ function ReasoningPart(props: { last: boolean; part: ReasoningPart; message: Ass
         flexDirection="column"
         flexShrink={0}
         border={gutter() ? ["left"] : undefined}
-        customBorderChars={gutter() ? SplitBorder.customBorderChars : undefined}
-        borderColor={gutter() ? reasoningGutterColor(theme) : undefined}
+        customBorderChars={gutter() ? { ...SplitBorder.customBorderChars, vertical: theme.thinkingGutterChar } : undefined}
+        borderColor={gutter() ? (isDone() ? theme.thinkingGutterColorDone : theme.thinkingGutterColor) : undefined}
       >
         <box onMouseUp={toggle}>
           <ReasoningHeader

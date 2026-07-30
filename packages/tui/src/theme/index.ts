@@ -89,10 +89,13 @@ export type Theme = {
   readonly syntaxPunctuation: RGBA
   readonly thinkingText: RGBA
   readonly thinkingGutter: boolean
+  readonly thinkingGutterChar: string
+  readonly thinkingGutterColor: RGBA
+  readonly thinkingGutterColorDone: RGBA
   readonly thinkingOpacity: number
   _hasSelectedListItemText: boolean
 }
-type ThemeColor = Exclude<keyof Theme, "thinkingOpacity" | "thinkingGutter" | "_hasSelectedListItemText">
+type ThemeColor = Exclude<keyof Theme, "thinkingOpacity" | "thinkingGutter" | "thinkingGutterChar" | "_hasSelectedListItemText">
 export type SyntaxStyleOverrides = Record<string, { italic?: boolean }>
 
 export function selectedForeground(theme: Theme, bg?: RGBA): RGBA {
@@ -123,12 +126,15 @@ type ColorValue = HexColor | RefName | Variant | RGBA
 export type ThemeJson = {
   $schema?: string
   defs?: Record<string, HexColor | RefName>
-  theme: Omit<Record<ThemeColor, ColorValue>, "selectedListItemText" | "backgroundMenu" | "thinkingText"> & {
+  theme: Omit<Record<ThemeColor, ColorValue>, "selectedListItemText" | "backgroundMenu" | "thinkingText" | "thinkingGutterColor" | "thinkingGutterColorDone"> & {
     selectedListItemText?: ColorValue
     backgroundMenu?: ColorValue
     thinkingText?: ColorValue
     thinkingOpacity?: number
     thinkingGutter?: boolean
+    thinkingGutterChar?: string
+    thinkingGutterColor?: ColorValue
+    thinkingGutterColorDone?: ColorValue
   }
 }
 
@@ -277,6 +283,9 @@ export function resolveTheme(theme: ThemeJson, mode: "dark" | "light") {
           key !== "backgroundMenu" &&
           key !== "thinkingOpacity" &&
           key !== "thinkingGutter" &&
+          key !== "thinkingGutterChar" &&
+          key !== "thinkingGutterColor" &&
+          key !== "thinkingGutterColorDone" &&
           key !== "thinkingText",
       )
       .map(([key, value]) => {
@@ -308,10 +317,19 @@ export function resolveTheme(theme: ThemeJson, mode: "dark" | "light") {
   // Handle thinkingOpacity - optional with default of 0.6
   const thinkingOpacity = theme.theme.thinkingOpacity ?? 0.6
 
+  // Handle thinkingGutterColor / thinkingGutterColorDone - optional colors that
+  // default to the warning hue dimmed by thinkingOpacity (matches the
+  // ReasoningHeader's active color), so the gutter tracks the header by default.
+  const warning = resolved.warning!
+  const gutterColorDefault = RGBA.fromValues(warning.r, warning.g, warning.b, thinkingOpacity)
+
   return {
     ...resolved,
     _hasSelectedListItemText: hasSelectedListItemText,
     thinkingGutter: theme.theme.thinkingGutter ?? false,
+    thinkingGutterChar: theme.theme.thinkingGutterChar ?? "┃",
+    thinkingGutterColor: theme.theme.thinkingGutterColor !== undefined ? resolveColor(theme.theme.thinkingGutterColor) : gutterColorDefault,
+    thinkingGutterColorDone: theme.theme.thinkingGutterColorDone !== undefined ? resolveColor(theme.theme.thinkingGutterColorDone) : gutterColorDefault,
     thinkingOpacity,
   } as Theme
 }

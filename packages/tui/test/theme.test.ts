@@ -48,15 +48,28 @@ test("resolveTheme defaults thinkingGutter to false and thinkingText to textMute
   const resolved = resolveTheme(DEFAULT_THEMES.opencode, "dark")
   expect(resolved.thinkingGutter).toBe(false)
   expect(resolved.thinkingText).toEqual(resolved.textMuted)
+  expect(resolved.thinkingGutterChar).toBe("┃")
+  expect(resolved.thinkingGutterColor).toEqual(
+    RGBA.fromValues(resolved.warning.r, resolved.warning.g, resolved.warning.b, 0.6),
+  )
+  expect(resolved.thinkingGutterColorDone).toEqual(
+    RGBA.fromValues(resolved.warning.r, resolved.warning.g, resolved.warning.b, 0.6),
+  )
 })
 
 test("resolveTheme honors an explicit thinkingText and thinkingGutter", () => {
   const item = structuredClone(DEFAULT_THEMES.opencode)
   item.theme.thinkingText = "#123456"
   item.theme.thinkingGutter = true
+  item.theme.thinkingGutterChar = "█"
+  item.theme.thinkingGutterColor = "#aabbcc"
+  item.theme.thinkingGutterColorDone = "#112233"
   const resolved = resolveTheme(item, "dark")
   expect(resolved.thinkingText).toEqual(RGBA.fromHex("#123456"))
   expect(resolved.thinkingGutter).toBe(true)
+  expect(resolved.thinkingGutterChar).toBe("█")
+  expect(resolved.thinkingGutterColor).toEqual(RGBA.fromHex("#aabbcc"))
+  expect(resolved.thinkingGutterColorDone).toEqual(RGBA.fromHex("#112233"))
 })
 
 test("high-contrast theme opts into the gutter and full-bright thinking", () => {

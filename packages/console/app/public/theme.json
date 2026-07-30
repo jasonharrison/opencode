@@ -89,7 +89,10 @@
         "syntaxPunctuation": { "$ref": "#/definitions/colorValue" },
         "thinkingText": { "$ref": "#/definitions/colorValue" },
         "thinkingOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
-        "thinkingGutter": { "type": "boolean" }
+        "thinkingGutter": { "type": "boolean" },
+        "thinkingGutterChar": { "type": "string", "pattern": "^.$" },
+        "thinkingGutterColor": { "$ref": "#/definitions/colorValue" },
+        "thinkingGutterColorDone": { "$ref": "#/definitions/colorValue" }
       },
       "required": ["primary", "secondary", "accent", "text", "textMuted", "background"],
       "additionalProperties": false
