@@ -11,6 +11,7 @@ import dracula from "./assets/dracula.json" with { type: "json" }
 import everforest from "./assets/everforest.json" with { type: "json" }
 import flexoki from "./assets/flexoki.json" with { type: "json" }
 import github from "./assets/github.json" with { type: "json" }
+import highContrast from "./assets/high-contrast.json" with { type: "json" }
 import gruvbox from "./assets/gruvbox.json" with { type: "json" }
 import kanagawa from "./assets/kanagawa.json" with { type: "json" }
 import lucentOrng from "./assets/lucent-orng.json" with { type: "json" }
@@ -86,10 +87,12 @@ export type Theme = {
   readonly syntaxType: RGBA
   readonly syntaxOperator: RGBA
   readonly syntaxPunctuation: RGBA
+  readonly thinkingText: RGBA
+  readonly thinkingGutter: boolean
   readonly thinkingOpacity: number
   _hasSelectedListItemText: boolean
 }
-type ThemeColor = Exclude<keyof Theme, "thinkingOpacity" | "_hasSelectedListItemText">
+type ThemeColor = Exclude<keyof Theme, "thinkingOpacity" | "thinkingGutter" | "_hasSelectedListItemText">
 export type SyntaxStyleOverrides = Record<string, { italic?: boolean }>
 
 export function selectedForeground(theme: Theme, bg?: RGBA): RGBA {
@@ -120,10 +123,12 @@ type ColorValue = HexColor | RefName | Variant | RGBA
 export type ThemeJson = {
   $schema?: string
   defs?: Record<string, HexColor | RefName>
-  theme: Omit<Record<ThemeColor, ColorValue>, "selectedListItemText" | "backgroundMenu"> & {
+  theme: Omit<Record<ThemeColor, ColorValue>, "selectedListItemText" | "backgroundMenu" | "thinkingText"> & {
     selectedListItemText?: ColorValue
     backgroundMenu?: ColorValue
+    thinkingText?: ColorValue
     thinkingOpacity?: number
+    thinkingGutter?: boolean
   }
 }
 
@@ -139,6 +144,7 @@ export const DEFAULT_THEMES: Record<string, ThemeJson> = {
   everforest,
   flexoki,
   github,
+  ["high-contrast"]: highContrast,
   gruvbox,
   kanagawa,
   material,
@@ -265,7 +271,14 @@ export function resolveTheme(theme: ThemeJson, mode: "dark" | "light") {
 
   const resolved = Object.fromEntries(
     Object.entries(theme.theme)
-      .filter(([key]) => key !== "selectedListItemText" && key !== "backgroundMenu" && key !== "thinkingOpacity")
+      .filter(
+        ([key]) =>
+          key !== "selectedListItemText" &&
+          key !== "backgroundMenu" &&
+          key !== "thinkingOpacity" &&
+          key !== "thinkingGutter" &&
+          key !== "thinkingText",
+      )
       .map(([key, value]) => {
         return [key, resolveColor(value as ColorValue)]
       }),
@@ -288,12 +301,17 @@ export function resolveTheme(theme: ThemeJson, mode: "dark" | "light") {
     resolved.backgroundMenu = resolved.backgroundElement
   }
 
+  // Handle thinkingText - optional, falls back to textMuted so reasoning blocks
+  // read as a distinct, dimmer color than the final answer by default.
+  resolved.thinkingText = theme.theme.thinkingText !== undefined ? resolveColor(theme.theme.thinkingText) : resolved.textMuted!
+
   // Handle thinkingOpacity - optional with default of 0.6
   const thinkingOpacity = theme.theme.thinkingOpacity ?? 0.6
 
   return {
     ...resolved,
     _hasSelectedListItemText: hasSelectedListItemText,
+    thinkingGutter: theme.theme.thinkingGutter ?? false,
     thinkingOpacity,
   } as Theme
 }

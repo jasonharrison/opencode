@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { mkdir, writeFile } from "node:fs/promises"
 import path from "node:path"
-import type { TerminalColors } from "@opentui/core"
+import { RGBA, type TerminalColors } from "@opentui/core"
 import { DEFAULT_THEMES, addTheme, allThemes, hasTheme, resolveTheme, terminalMode } from "../src/theme"
 import { discoverThemes } from "../src/context/theme"
 import { tmpdir } from "./fixture/fixture"
@@ -42,6 +42,28 @@ test("resolveTheme rejects circular color refs", () => {
   item.defs = { ...item.defs, one: "two", two: "one" }
   item.theme.primary = "one"
   expect(() => resolveTheme(item, "dark")).toThrow("Circular color reference")
+})
+
+test("resolveTheme defaults thinkingGutter to false and thinkingText to textMuted when omitted", () => {
+  const resolved = resolveTheme(DEFAULT_THEMES.opencode, "dark")
+  expect(resolved.thinkingGutter).toBe(false)
+  expect(resolved.thinkingText).toEqual(resolved.textMuted)
+})
+
+test("resolveTheme honors an explicit thinkingText and thinkingGutter", () => {
+  const item = structuredClone(DEFAULT_THEMES.opencode)
+  item.theme.thinkingText = "#123456"
+  item.theme.thinkingGutter = true
+  const resolved = resolveTheme(item, "dark")
+  expect(resolved.thinkingText).toEqual(RGBA.fromHex("#123456"))
+  expect(resolved.thinkingGutter).toBe(true)
+})
+
+test("high-contrast theme opts into the gutter and full-bright thinking", () => {
+  const resolved = resolveTheme(DEFAULT_THEMES["high-contrast"]!, "dark")
+  expect(resolved.thinkingGutter).toBe(true)
+  expect(resolved.thinkingOpacity).toBe(1.0)
+  expect(resolved.thinkingText).toEqual(resolved.text)
 })
 
 function terminalColors(defaultBackground: string | null, palette: Array<string | null> = []): TerminalColors {

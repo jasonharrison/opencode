@@ -353,6 +353,8 @@ export type TuiThemeCurrent = {
   readonly syntaxType: RGBA
   readonly syntaxOperator: RGBA
   readonly syntaxPunctuation: RGBA
+  readonly thinkingText: RGBA
+  readonly thinkingGutter: boolean
   readonly thinkingOpacity: number
 }
 

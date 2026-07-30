@@ -80,6 +80,8 @@ function themeCurrent(): HostPluginApi["theme"]["current"] {
     syntaxType: a,
     syntaxOperator: a,
     syntaxPunctuation: c,
+    thinkingText: b,
+    thinkingGutter: false,
     thinkingOpacity: 0.6,
   }
 }

@@ -25,6 +25,7 @@ import { SplitBorder } from "../../ui/border"
 import { useTuiPaths, useTuiTerminalEnvironment } from "../../context/runtime"
 import { Spinner } from "../../component/spinner"
 import { createSyntaxStyleMemo, generateSubtleSyntax, selectedForeground, useTheme } from "../../context/theme"
+import type { Theme } from "../../theme"
 import { BoxRenderable, ScrollBoxRenderable, addDefaultParsers, TextAttributes, RGBA } from "@opentui/core"
 import { Prompt, type PromptRef } from "../../component/prompt"
 import type {
@@ -1482,6 +1483,9 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
           const component = createMemo(() => PART_MAPPING[part.type as keyof typeof PART_MAPPING])
           return (
             <Show when={component()}>
+              <Show when={theme.thinkingGutter && isAnswerBoundary(props.parts, index())}>
+                <box marginTop={1} paddingLeft={3} flexShrink={0} border={["top"]} borderColor={theme.border} />
+              </Show>
               <Dynamic
                 last={index() === props.parts.length - 1}
                 component={component()}
@@ -1569,6 +1573,21 @@ const PART_MAPPING = {
 
 const INLINE_TOOL_ICON_WIDTH = 2
 
+// Left-gutter color for reasoning blocks when a theme opts into thinkingGutter:
+// the warning hue dimmed by thinkingOpacity (matches the "Thought" header).
+function reasoningGutterColor(theme: Theme) {
+  return RGBA.fromValues(theme.warning.r, theme.warning.g, theme.warning.b, theme.thinkingOpacity)
+}
+
+// True for the first text part of a message when a reasoning part precedes it,
+// so a faint rule can mark the thinking -> final-answer boundary.
+function isAnswerBoundary(parts: Part[], index: number) {
+  const part = parts[index]
+  if (!part || part.type !== "text") return false
+  if (parts.findIndex((p) => p.type === "text") !== index) return false
+  return parts.slice(0, index).some((p) => p.type === "reasoning")
+}
+
 function ReasoningPart(props: { last: boolean; part: ReasoningPart; message: AssistantMessage }) {
   const { theme } = useTheme()
   const ctx = use()
@@ -1590,6 +1609,7 @@ function ReasoningPart(props: { last: boolean; part: ReasoningPart; message: Ass
   })
   const summary = createMemo(() => reasoningSummary(content()))
   const syntax = createSyntaxStyleMemo(() => generateSubtleSyntax(theme))
+  const gutter = createMemo(() => theme.thinkingGutter)
 
   const toggle = () => {
     if (!inMinimal()) return
@@ -1600,10 +1620,13 @@ function ReasoningPart(props: { last: boolean; part: ReasoningPart; message: Ass
     <Show when={content()}>
       <box
         ref={(el: BoxRenderable) => alwaysSeparate.add(el)}
-        paddingLeft={3}
+        paddingLeft={gutter() ? 2 : 3}
         marginTop={1}
         flexDirection="column"
         flexShrink={0}
+        border={gutter() ? ["left"] : undefined}
+        customBorderChars={gutter() ? SplitBorder.customBorderChars : undefined}
+        borderColor={gutter() ? reasoningGutterColor(theme) : undefined}
       >
         <box onMouseUp={toggle}>
           <ReasoningHeader
@@ -1623,7 +1646,7 @@ function ReasoningPart(props: { last: boolean; part: ReasoningPart; message: Ass
               syntaxStyle={syntax()}
               content={summary().body}
               conceal={ctx.conceal()}
-              fg={theme.textMuted}
+              fg={theme.thinkingText}
             />
           </box>
         </Show>

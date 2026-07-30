@@ -86,7 +86,10 @@
         "syntaxNumber": { "$ref": "#/definitions/colorValue" },
         "syntaxType": { "$ref": "#/definitions/colorValue" },
         "syntaxOperator": { "$ref": "#/definitions/colorValue" },
-        "syntaxPunctuation": { "$ref": "#/definitions/colorValue" }
+        "syntaxPunctuation": { "$ref": "#/definitions/colorValue" },
+        "thinkingText": { "$ref": "#/definitions/colorValue" },
+        "thinkingOpacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "thinkingGutter": { "type": "boolean" }
       },
       "required": ["primary", "secondary", "accent", "text", "textMuted", "background"],
       "additionalProperties": false

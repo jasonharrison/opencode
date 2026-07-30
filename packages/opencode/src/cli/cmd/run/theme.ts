@@ -68,7 +68,7 @@ export type RunTheme = {
   block: RunBlockTheme
 }
 
-type ThemeColor = Exclude<keyof TuiThemeCurrent, "thinkingOpacity">
+type ThemeColor = Exclude<keyof TuiThemeCurrent, "thinkingOpacity" | "thinkingGutter">
 type HexColor = `#${string}`
 type RefName = string
 type Variant = {
@@ -78,10 +78,12 @@ type Variant = {
 type ColorValue = HexColor | RefName | Variant | RGBA | number
 type ThemeJson = {
   defs?: Record<string, HexColor | RefName>
-  theme: Omit<Record<ThemeColor, ColorValue>, "selectedListItemText" | "backgroundMenu"> & {
+  theme: Omit<Record<ThemeColor, ColorValue>, "selectedListItemText" | "backgroundMenu" | "thinkingText"> & {
     selectedListItemText?: ColorValue
     backgroundMenu?: ColorValue
+    thinkingText?: ColorValue
     thinkingOpacity?: number
+    thinkingGutter?: boolean
   }
 }
 
@@ -309,7 +311,14 @@ export function resolveTheme(theme: ThemeJson, pick: "dark" | "light"): TuiTheme
 
   const resolved = Object.fromEntries(
     Object.entries(theme.theme)
-      .filter(([key]) => key !== "selectedListItemText" && key !== "backgroundMenu" && key !== "thinkingOpacity")
+      .filter(
+        ([key]) =>
+          key !== "selectedListItemText" &&
+          key !== "backgroundMenu" &&
+          key !== "thinkingOpacity" &&
+          key !== "thinkingGutter" &&
+          key !== "thinkingText",
+      )
       .map(([key, value]) => [key, resolveColor(value as ColorValue)]),
   ) as Partial<Record<ThemeColor, RGBA>>
 
@@ -321,7 +330,10 @@ export function resolveTheme(theme: ThemeJson, pick: "dark" | "light"): TuiTheme
         : resolveColor(theme.theme.selectedListItemText),
     backgroundMenu:
       theme.theme.backgroundMenu === undefined ? resolved.backgroundElement! : resolveColor(theme.theme.backgroundMenu),
+    thinkingText:
+      theme.theme.thinkingText === undefined ? resolved.textMuted! : resolveColor(theme.theme.thinkingText),
     thinkingOpacity: theme.theme.thinkingOpacity ?? 0.6,
+    thinkingGutter: theme.theme.thinkingGutter ?? false,
   }
 }
 
@@ -476,13 +488,14 @@ function quantizeColor(indexed: RGBA[], rgba: RGBA): RGBA {
 function quantizeTheme(theme: TuiThemeCurrent, indexed: RGBA[]): TuiThemeCurrent {
   const resolved = Object.fromEntries(
     Object.entries(theme)
-      .filter(([key]) => key !== "thinkingOpacity")
+      .filter(([key]) => key !== "thinkingOpacity" && key !== "thinkingGutter")
       .map(([key, value]) => [key, quantizeColor(indexed, value as RGBA)]),
   ) as Partial<Record<ThemeColor, RGBA>>
 
   return {
     ...(resolved as Record<ThemeColor, RGBA>),
     thinkingOpacity: theme.thinkingOpacity,
+    thinkingGutter: theme.thinkingGutter,
   }
 }
 
