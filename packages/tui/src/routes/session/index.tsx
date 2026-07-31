@@ -24,7 +24,7 @@ import { useEvent } from "../../context/event"
 import { SplitBorder } from "../../ui/border"
 import { useTuiPaths, useTuiTerminalEnvironment } from "../../context/runtime"
 import { Spinner } from "../../component/spinner"
-import { createSyntaxStyleMemo, generateSubtleSyntax, selectedForeground, useTheme } from "../../context/theme"
+import { createSyntaxStyleMemo, generateSubtleSyntax, selectedForeground, useTheme, type Theme } from "../../context/theme"
 import { BoxRenderable, ScrollBoxRenderable, addDefaultParsers, TextAttributes, RGBA } from "@opentui/core"
 import { Prompt, type PromptRef } from "../../component/prompt"
 import type {
@@ -1842,6 +1842,10 @@ function GenericTool(props: ToolProps) {
   )
 }
 
+export function inlineToolForeground(theme: Pick<Theme, "text" | "textMuted">, status: ToolPart["state"]["status"]) {
+  return status === "completed" ? theme.textMuted : theme.text
+}
+
 function InlineTool(props: {
   icon: string
   iconColor?: RGBA
@@ -1885,8 +1889,7 @@ function InlineTool(props: {
     if (permission()) return theme.warning
     if (failed()) return theme.error
     if (hover() && props.onClick) return theme.text
-    if (props.complete) return theme.textMuted
-    return theme.text
+    return inlineToolForeground(theme, props.part.state.status)
   })
 
   return (

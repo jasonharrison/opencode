@@ -1,12 +1,13 @@
 import { afterEach, describe, expect, test } from "bun:test"
 import { createSignal, For, Show } from "solid-js"
-import type { BoxRenderable, ScrollBoxRenderable } from "@opentui/core"
+import { RGBA, type BoxRenderable, type ScrollBoxRenderable } from "@opentui/core"
 import { testRender, type JSX } from "@opentui/solid"
 import {
   formatCompletedSubagentDetail,
   formatSubagentRetry,
   formatSubagentTitle,
   formatSubagentToolcalls,
+  inlineToolForeground,
   InlineToolRow,
   parseApplyPatchFiles,
   parseDiagnostics,
@@ -238,6 +239,16 @@ describe("TUI inline tool wrapping", () => {
     const frame = await renderFrame(() => <FailedCompleteToolFixture />, { width: 72, height: 3 })
     expect(frame).toContain("Read src/index.ts")
     expect(frame).not.toContain("Read failed")
+  })
+
+  test("uses execution state rather than display payload for inline tool color", () => {
+    const text = RGBA.fromInts(255, 255, 255)
+    const textMuted = RGBA.fromInts(120, 120, 120)
+    const colors = { text, textMuted }
+
+    expect(inlineToolForeground(colors, "pending")).toBe(text)
+    expect(inlineToolForeground(colors, "running")).toBe(text)
+    expect(inlineToolForeground(colors, "completed")).toBe(textMuted)
   })
 
   test("filters malformed nested tool wire data", () => {
