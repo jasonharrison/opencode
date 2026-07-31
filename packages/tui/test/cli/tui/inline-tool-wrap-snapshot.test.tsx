@@ -241,14 +241,13 @@ describe("TUI inline tool wrapping", () => {
     expect(frame).not.toContain("Read failed")
   })
 
-  test("uses execution state rather than display payload for inline tool color", () => {
+  test("keeps normal inline tool text bright after completion", () => {
     const text = RGBA.fromInts(255, 255, 255)
-    const textMuted = RGBA.fromInts(120, 120, 120)
-    const colors = { text, textMuted }
+    const colors = { text }
 
     expect(inlineToolForeground(colors, "pending")).toBe(text)
     expect(inlineToolForeground(colors, "running")).toBe(text)
-    expect(inlineToolForeground(colors, "completed")).toBe(textMuted)
+    expect(inlineToolForeground(colors, "completed")).toBe(text)
   })
 
   test("filters malformed nested tool wire data", () => {

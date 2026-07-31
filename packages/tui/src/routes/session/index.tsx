@@ -1842,8 +1842,9 @@ function GenericTool(props: ToolProps) {
   )
 }
 
-export function inlineToolForeground(theme: Pick<Theme, "text" | "textMuted">, status: ToolPart["state"]["status"]) {
-  return status === "completed" ? theme.textMuted : theme.text
+// Tool state is shown by the icon and higher-priority status colors; normal tool text stays full contrast.
+export function inlineToolForeground(theme: Pick<Theme, "text">, _status: ToolPart["state"]["status"]) {
+  return theme.text
 }
 
 function InlineTool(props: {
