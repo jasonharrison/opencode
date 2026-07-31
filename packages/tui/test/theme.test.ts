@@ -2,7 +2,15 @@ import { expect, test } from "bun:test"
 import { mkdir, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { RGBA, type TerminalColors } from "@opentui/core"
-import { DEFAULT_THEMES, addTheme, allThemes, hasTheme, resolveTheme, terminalMode } from "../src/theme"
+import {
+  DEFAULT_THEMES,
+  addTheme,
+  allThemes,
+  generateSubtleSyntax,
+  hasTheme,
+  resolveTheme,
+  terminalMode,
+} from "../src/theme"
 import { discoverThemes } from "../src/context/theme"
 import { tmpdir } from "./fixture/fixture"
 
@@ -77,6 +85,19 @@ test("high-contrast theme opts into the gutter and full-bright thinking", () => 
   expect(resolved.thinkingGutter).toBe(true)
   expect(resolved.thinkingOpacity).toBe(1.0)
   expect(resolved.thinkingText).toEqual(resolved.text)
+})
+
+test("subtle syntax uses thinkingText for ordinary reasoning prose", () => {
+  const item = structuredClone(DEFAULT_THEMES.opencode)
+  item.theme.thinkingText = "#123456"
+  const resolved = resolveTheme(item, "dark")
+  const syntax = generateSubtleSyntax(resolved)
+
+  try {
+    expect(syntax.getStyle("default")?.fg).toEqual(resolved.thinkingText)
+  } finally {
+    syntax.destroy()
+  }
 })
 
 function terminalColors(defaultBackground: string | null, palette: Array<string | null> = []): TerminalColors {

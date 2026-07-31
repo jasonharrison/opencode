@@ -24,7 +24,13 @@ import { useEvent } from "../../context/event"
 import { SplitBorder } from "../../ui/border"
 import { useTuiPaths, useTuiTerminalEnvironment } from "../../context/runtime"
 import { Spinner } from "../../component/spinner"
-import { createSyntaxStyleMemo, generateSubtleSyntax, selectedForeground, useTheme, type Theme } from "../../context/theme"
+import {
+  createSyntaxStyleMemo,
+  generateSubtleSyntax,
+  selectedForeground,
+  useTheme,
+  type Theme,
+} from "../../context/theme"
 import { BoxRenderable, ScrollBoxRenderable, addDefaultParsers, TextAttributes, RGBA } from "@opentui/core"
 import { Prompt, type PromptRef } from "../../component/prompt"
 import type {
@@ -1572,37 +1578,46 @@ const PART_MAPPING = {
 
 const INLINE_TOOL_ICON_WIDTH = 2
 
-// True for the first text part of a message when a reasoning part precedes it,
-// so a faint rule can mark the thinking -> final-answer boundary.
-function isAnswerBoundary(parts: Part[], index: number) {
+// True for the first visible text part when visible reasoning precedes it, so
+// a faint rule can mark the thinking -> final-answer boundary.
+export function isAnswerBoundary(parts: Part[], index: number) {
   const part = parts[index]
-  if (!part || part.type !== "text") return false
-  if (parts.findIndex((p) => p.type === "text") !== index) return false
-  return parts.slice(0, index).some((p) => p.type === "reasoning")
+  if (!part || !isVisibleText(part)) return false
+  if (parts.slice(0, index).some(isVisibleText)) return false
+  return parts.slice(0, index).some(isVisibleReasoning)
 }
 
 function ReasoningPart(props: { last: boolean; part: ReasoningPart; message: AssistantMessage }) {
-  const { theme } = useTheme()
   const ctx = use()
+  const { theme } = useTheme()
+  return <ReasoningPartView part={props.part} theme={theme} thinkingMode={ctx.thinkingMode} conceal={ctx.conceal} />
+}
+
+export function ReasoningPartView(props: {
+  part: ReasoningPart
+  theme: Theme
+  thinkingMode: () => ThinkingMode
+  conceal: () => boolean
+}) {
   // Collapsed by default in hide mode: a single line throughout, so the
   // layout never shifts. Click to open the full markdown block, click to close.
   const [expanded, setExpanded] = createSignal(false)
 
   const content = createMemo(() => {
     // OpenRouter encrypts some reasoning blocks; drop the placeholder.
-    return props.part.text.replace("[REDACTED]", "").trim()
+    return visibleReasoningText(props.part.text)
   })
   // Reasoning is finalized when the server sets `time.end` (see processor.ts).
   // Flips independently of the parent message completing.
   const isDone = createMemo(() => props.part.time.end !== undefined)
-  const inMinimal = createMemo(() => ctx.thinkingMode() === "hide")
+  const inMinimal = createMemo(() => props.thinkingMode() === "hide")
   const duration = createMemo(() => {
     const end = props.part.time.end
     return end === undefined ? 0 : Math.max(0, end - props.part.time.start)
   })
   const summary = createMemo(() => reasoningSummary(content()))
-  const syntax = createSyntaxStyleMemo(() => generateSubtleSyntax(theme))
-  const gutter = createMemo(() => theme.thinkingGutter)
+  const syntax = createSyntaxStyleMemo(() => generateSubtleSyntax(props.theme))
+  const gutter = createMemo(() => props.theme.thinkingGutter)
 
   const toggle = () => {
     if (!inMinimal()) return
@@ -1618,11 +1633,14 @@ function ReasoningPart(props: { last: boolean; part: ReasoningPart; message: Ass
         flexDirection="column"
         flexShrink={0}
         border={gutter() ? ["left"] : undefined}
-        customBorderChars={gutter() ? { ...SplitBorder.customBorderChars, vertical: theme.thinkingGutterChar } : undefined}
-        borderColor={gutter() ? (isDone() ? theme.thinkingGutterColorDone : theme.thinkingGutterColor) : undefined}
+        customBorderChars={
+          gutter() ? { ...SplitBorder.customBorderChars, vertical: props.theme.thinkingGutterChar } : undefined
+        }
+        borderColor={gutter() ? reasoningGutterColor(props.theme, isDone()) : undefined}
       >
         <box onMouseUp={toggle}>
           <ReasoningHeader
+            theme={props.theme}
             toggleable={inMinimal()}
             open={!inMinimal() || expanded()}
             done={isDone()}
@@ -1638,8 +1656,8 @@ function ReasoningPart(props: { last: boolean; part: ReasoningPart; message: Ass
               streaming={true}
               syntaxStyle={syntax()}
               content={summary().body}
-              conceal={ctx.conceal()}
-              fg={theme.thinkingText}
+              conceal={props.conceal()}
+              fg={props.theme.thinkingText}
             />
           </box>
         </Show>
@@ -1648,18 +1666,42 @@ function ReasoningPart(props: { last: boolean; part: ReasoningPart; message: Ass
   )
 }
 
+function isVisibleText(part: Part) {
+  return part.type === "text" && part.text.trim().length > 0
+}
+
+function isVisibleReasoning(part: Part) {
+  return part.type === "reasoning" && visibleReasoningText(part.text).length > 0
+}
+
+function visibleReasoningText(text: string) {
+  return text.replaceAll("[REDACTED]", "").trim()
+}
+
+export function reasoningGutterColor(
+  theme: Pick<Theme, "thinkingGutterColor" | "thinkingGutterColorDone">,
+  done: boolean,
+) {
+  return done ? theme.thinkingGutterColorDone : theme.thinkingGutterColor
+}
+
 function ReasoningHeader(props: {
+  theme: Theme
   toggleable: boolean
   open: boolean
   done: boolean
   title: string | null
   duration?: string
 }) {
-  const { theme } = useTheme()
   const fg = () =>
     props.open
-      ? RGBA.fromValues(theme.warning.r, theme.warning.g, theme.warning.b, theme.thinkingOpacity)
-      : theme.warning
+      ? RGBA.fromValues(
+          props.theme.warning.r,
+          props.theme.warning.g,
+          props.theme.warning.b,
+          props.theme.thinkingOpacity,
+        )
+      : props.theme.warning
 
   return (
     <Switch>
@@ -1843,7 +1885,7 @@ function GenericTool(props: ToolProps) {
 }
 
 // Tool state is shown by the icon and higher-priority status colors; normal tool text stays full contrast.
-export function inlineToolForeground(theme: Pick<Theme, "text">, _status: ToolPart["state"]["status"]) {
+export function inlineToolForeground(theme: Pick<Theme, "text">) {
   return theme.text
 }
 
@@ -1890,7 +1932,7 @@ function InlineTool(props: {
     if (permission()) return theme.warning
     if (failed()) return theme.error
     if (hover() && props.onClick) return theme.text
-    return inlineToolForeground(theme, props.part.state.status)
+    return inlineToolForeground(theme)
   })
 
   return (

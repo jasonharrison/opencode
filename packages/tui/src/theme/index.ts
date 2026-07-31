@@ -95,7 +95,10 @@ export type Theme = {
   readonly thinkingOpacity: number
   _hasSelectedListItemText: boolean
 }
-type ThemeColor = Exclude<keyof Theme, "thinkingOpacity" | "thinkingGutter" | "thinkingGutterChar" | "_hasSelectedListItemText">
+type ThemeColor = Exclude<
+  keyof Theme,
+  "thinkingOpacity" | "thinkingGutter" | "thinkingGutterChar" | "_hasSelectedListItemText"
+>
 export type SyntaxStyleOverrides = Record<string, { italic?: boolean }>
 
 export function selectedForeground(theme: Theme, bg?: RGBA): RGBA {
@@ -126,7 +129,10 @@ type ColorValue = HexColor | RefName | Variant | RGBA
 export type ThemeJson = {
   $schema?: string
   defs?: Record<string, HexColor | RefName>
-  theme: Omit<Record<ThemeColor, ColorValue>, "selectedListItemText" | "backgroundMenu" | "thinkingText" | "thinkingGutterColor" | "thinkingGutterColorDone"> & {
+  theme: Omit<
+    Record<ThemeColor, ColorValue>,
+    "selectedListItemText" | "backgroundMenu" | "thinkingText" | "thinkingGutterColor" | "thinkingGutterColorDone"
+  > & {
     selectedListItemText?: ColorValue
     backgroundMenu?: ColorValue
     thinkingText?: ColorValue
@@ -312,7 +318,8 @@ export function resolveTheme(theme: ThemeJson, mode: "dark" | "light") {
 
   // Handle thinkingText - optional, falls back to textMuted so reasoning blocks
   // read as a distinct, dimmer color than the final answer by default.
-  resolved.thinkingText = theme.theme.thinkingText !== undefined ? resolveColor(theme.theme.thinkingText) : resolved.textMuted!
+  resolved.thinkingText =
+    theme.theme.thinkingText !== undefined ? resolveColor(theme.theme.thinkingText) : resolved.textMuted!
 
   // Handle thinkingOpacity - optional with default of 0.6
   const thinkingOpacity = theme.theme.thinkingOpacity ?? 0.6
@@ -328,8 +335,14 @@ export function resolveTheme(theme: ThemeJson, mode: "dark" | "light") {
     _hasSelectedListItemText: hasSelectedListItemText,
     thinkingGutter: theme.theme.thinkingGutter ?? false,
     thinkingGutterChar: theme.theme.thinkingGutterChar ?? "┃",
-    thinkingGutterColor: theme.theme.thinkingGutterColor !== undefined ? resolveColor(theme.theme.thinkingGutterColor) : gutterColorDefault,
-    thinkingGutterColorDone: theme.theme.thinkingGutterColorDone !== undefined ? resolveColor(theme.theme.thinkingGutterColorDone) : gutterColorDefault,
+    thinkingGutterColor:
+      theme.theme.thinkingGutterColor !== undefined
+        ? resolveColor(theme.theme.thinkingGutterColor)
+        : gutterColorDefault,
+    thinkingGutterColorDone:
+      theme.theme.thinkingGutterColorDone !== undefined
+        ? resolveColor(theme.theme.thinkingGutterColorDone)
+        : gutterColorDefault,
     thinkingOpacity,
   } as Theme
 }
@@ -599,18 +612,21 @@ export function generateSubtleSyntax(theme: Theme, overrides?: SyntaxStyleOverri
     rules.map((rule) => {
       const override = rule.scope.reduce((acc, scope) => ({ ...acc, ...overrides?.[scope] }), {})
       if (rule.style.foreground) {
-        const fg = rule.style.foreground
+        const isDefault = rule.scope.includes("default")
+        const fg = isDefault ? theme.thinkingText : rule.style.foreground
         return {
           ...rule,
           style: {
             ...rule.style,
             ...override,
-            foreground: RGBA.fromInts(
-              Math.round(fg.r * 255),
-              Math.round(fg.g * 255),
-              Math.round(fg.b * 255),
-              Math.round(theme.thinkingOpacity * 255),
-            ),
+            foreground: isDefault
+              ? fg
+              : RGBA.fromInts(
+                  Math.round(fg.r * 255),
+                  Math.round(fg.g * 255),
+                  Math.round(fg.b * 255),
+                  Math.round(theme.thinkingOpacity * 255),
+                ),
           },
         }
       }

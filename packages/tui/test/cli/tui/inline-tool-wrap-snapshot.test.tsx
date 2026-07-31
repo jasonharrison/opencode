@@ -245,9 +245,7 @@ describe("TUI inline tool wrapping", () => {
     const text = RGBA.fromInts(255, 255, 255)
     const colors = { text }
 
-    expect(inlineToolForeground(colors, "pending")).toBe(text)
-    expect(inlineToolForeground(colors, "running")).toBe(text)
-    expect(inlineToolForeground(colors, "completed")).toBe(text)
+    expect(inlineToolForeground(colors)).toBe(text)
   })
 
   test("filters malformed nested tool wire data", () => {
